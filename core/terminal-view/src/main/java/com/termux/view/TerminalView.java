@@ -84,6 +84,9 @@ public final class TerminalView extends View {
     float mScrollRemainder;
 
     /** If non-zero, this is the last unicode code point received if that was a combining character. */
+    /** If non-zero, this is the last unicode code point received if that was a combining character. */
+    int mCombiningAccent;
+
     /** Tracks current IME composing text for CJK inline composition support. */
     private CharSequence mComposingText = "";
 
