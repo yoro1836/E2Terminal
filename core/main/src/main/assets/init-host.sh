@@ -3,8 +3,9 @@ PROOT_BIN=$PREFIX/local/bin/proot
 
 mkdir -p $UBUNTU_DIR
 
-[ ! -e "$PROOT_BIN" ] && cp "$PREFIX/files/proot" "$PROOT_BIN"
-chmod +x "$PROOT_BIN"
+# Copy proot binary from native lib dir if not already present
+[ ! -e "$PREFIX/files/proot" ] && [ -f "$NATIVE_LIB_DIR/libproot-loader.so" ] && cp "$NATIVE_LIB_DIR/libproot-loader.so" "$PREFIX/files/proot" && chmod +x "$PREFIX/files/proot"
+[ ! -e "$PROOT_BIN" ] && [ -f "$PREFIX/files/proot" ] && cp "$PREFIX/files/proot" "$PROOT_BIN" && chmod +x "$PROOT_BIN"
 
 if [ -z "$(ls -A "$UBUNTU_DIR" | grep -vE '^(root|tmp)$')" ]; then
     if [ -f "$PREFIX/files/custom-rootfs.tar.gz" ]; then
