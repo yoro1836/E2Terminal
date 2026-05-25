@@ -24,21 +24,27 @@ fun localDir(): File {
     }
 }
 
-fun alpineDir(): File{
-    return localDir().child("alpine").also {
+fun ubuntuDir(): File{
+    return localDir().child("ubuntu").also {
         if (!it.exists()) {
             it.mkdirs()
         }
     }
 }
 
-fun alpineHomeDir(): File{
-    return alpineDir().child("root").also {
+fun ubuntuHomeDir(): File{
+    return ubuntuDir().child("root").also {
         if (!it.exists()) {
             it.mkdirs()
         }
     }
 }
+
+@Deprecated("Use ubuntuDir() instead", ReplaceWith("ubuntuDir()"))
+fun alpineDir(): File = ubuntuDir()
+
+@Deprecated("Use ubuntuHomeDir() instead", ReplaceWith("ubuntuHomeDir()"))
+fun alpineHomeDir(): File = ubuntuHomeDir()
 
 fun localBinDir(): File {
     return localDir().child("bin").also {

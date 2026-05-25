@@ -13,7 +13,7 @@ import android.provider.DocumentsContract
 import android.provider.DocumentsProvider
 import android.util.Log
 import android.webkit.MimeTypeMap
-import com.rk.libcommons.alpineHomeDir
+import com.rk.libcommons.ubuntuHomeDir
 import com.rk.resources.getString
 import com.rk.resources.strings
 import java.io.File
@@ -24,13 +24,13 @@ import java.util.LinkedList
 import java.util.Locale
 import com.rk.terminal.R
 
-class AlpineDocumentProvider : DocumentsProvider() {
+class UbuntuDocumentProvider : DocumentsProvider() {
     override fun queryRoots(projection: Array<String>?): Cursor {
         val result = MatrixCursor(
             projection
                 ?: DEFAULT_ROOT_PROJECTION
         )
-        val applicationName = "ReTerminal"
+        val applicationName = "E2Terminal"
 
         val row = result.newRow()
         row.add(DocumentsContract.Root.COLUMN_ROOT_ID, getDocIdForFile(BASE_DIR))
@@ -172,7 +172,7 @@ class AlpineDocumentProvider : DocumentsProvider() {
             // through the whole SD card).
             var isInsideHome: Boolean
             try {
-                isInsideHome = file.canonicalPath.startsWith(alpineHomeDir().canonicalPath)
+                isInsideHome = file.canonicalPath.startsWith(ubuntuHomeDir().canonicalPath)
             } catch (e: IOException) {
                 isInsideHome = true
             }
@@ -238,7 +238,7 @@ class AlpineDocumentProvider : DocumentsProvider() {
 
     companion object {
         fun isDocumentProviderEnabled(context: Context): Boolean {
-            val componentName = ComponentName(context, AlpineDocumentProvider::class.java)
+            val componentName = ComponentName(context, UbuntuDocumentProvider::class.java)
             val state = context.packageManager.getComponentEnabledSetting(componentName)
             return state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED ||
                     state == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT
@@ -248,7 +248,7 @@ class AlpineDocumentProvider : DocumentsProvider() {
             if (isDocumentProviderEnabled(context) == enabled) {
                 return
             }
-            val componentName = ComponentName(context, AlpineDocumentProvider::class.java)
+            val componentName = ComponentName(context, UbuntuDocumentProvider::class.java)
             val newState = if (enabled)
                 PackageManager.COMPONENT_ENABLED_STATE_ENABLED
             else
@@ -264,7 +264,7 @@ class AlpineDocumentProvider : DocumentsProvider() {
 
         private const val ALL_MIME_TYPES = "*/*"
 
-        private val BASE_DIR = alpineHomeDir()
+        private val BASE_DIR = ubuntuHomeDir()
 
         // The default columns to return information about a root if no specific
         // columns are requested in a query.

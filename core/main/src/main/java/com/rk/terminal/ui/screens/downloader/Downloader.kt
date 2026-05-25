@@ -1,15 +1,22 @@
 package com.rk.terminal.ui.screens.downloader
 
 import android.content.Context
+import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.rk.libcommons.*
@@ -48,9 +55,7 @@ fun Downloader(
             } ?: throw RuntimeException("Unsupported CPU")
 
             val filesToDownload = listOf(
-                "libtalloc.so.2" to abiMap[abi]!!.talloc,
-                "proot" to abiMap[abi]!!.proot,
-                "alpine.tar.gz" to abiMap[abi]!!.alpine
+                "ubuntu.tar.gz" to abiMap[abi]!!.ubuntu
             ).map { (name, url) -> DownloadFile(url, Rootfs.reTerminal.child(name)) }
 
             needsDownload = filesToDownload.any { !it.outputFile.exists() }
@@ -75,14 +80,61 @@ fun Downloader(
         }
     }
 
+    var customRootfsExists by remember { mutableStateOf(Rootfs.reTerminal.child("custom-rootfs.tar.gz").exists()) }
+    var showInfo by remember { mutableStateOf(false) }
+
+    val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        uri?.let {
+            val dest = Rootfs.reTerminal.child("custom-rootfs.tar.gz")
+            context.contentResolver.openInputStream(it)?.use { input ->
+                dest.outputStream().use { output -> input.copyTo(output) }
+            }
+            customRootfsExists = true
+            toast("Custom rootfs selected. Restart session to use it.")
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         if (!isSetupComplete) {
-            if (needsDownload) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
+                if (needsDownload) {
                     Text(progressText, style = MaterialTheme.typography.bodyLarge)
                     Spacer(modifier = Modifier.height(16.dp))
                     LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth(0.8f))
+                    Spacer(modifier = Modifier.height(32.dp))
                 }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                Text("Custom Rootfs", style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    "Use any ARM64 Linux distro (Fedora, Arch, etc).\nSelect a .tar.gz rootfs or place as custom-rootfs.tar.gz",
+                    style = MaterialTheme.typography.bodySmall,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = { filePicker.launch("application/gzip") }) {
+                        Text("Select File")
+                    }
+                    if (customRootfsExists) {
+                        OutlinedButton(onClick = {
+                            Rootfs.reTerminal.child("custom-rootfs.tar.gz").delete()
+                            customRootfsExists = false
+                            toast("Custom rootfs removed.")
+                        }, colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)) {
+                            Icon(Icons.Outlined.Delete, null, Modifier.size(18.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Remove")
+                        }
+                    }
+                    IconButton(onClick = { showInfo = !showInfo }) {
+                        Icon(Icons.Outlined.Info, "Info", Modifier.size(18.dp))
+                    }
+                }
+                if (customRootfsExists) Text("Custom rootfs active", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
             }
         } else {
             TerminalScreen(mainActivityActivity = mainActivity, navController = navController)
@@ -147,21 +199,9 @@ private suspend fun downloadFile(url: String, outputFile: File, onProgress: (Lon
 }
 
 private val abiMap = mapOf(
-    "x86_64" to AbiUrls(
-        talloc = "https://raw.githubusercontent.com/Xed-Editor/Karbon-PackagesX/main/x86_64/libtalloc.so.2",
-        proot = "https://raw.githubusercontent.com/Xed-Editor/Karbon-PackagesX/main/x86_64/proot",
-        alpine = "https://dl-cdn.alpinelinux.org/alpine/v3.21/releases/x86_64/alpine-minirootfs-3.21.0-x86_64.tar.gz"
-    ),
     "arm64-v8a" to AbiUrls(
-        talloc = "https://raw.githubusercontent.com/Xed-Editor/Karbon-PackagesX/main/aarch64/libtalloc.so.2",
-        proot = "https://raw.githubusercontent.com/Xed-Editor/Karbon-PackagesX/main/aarch64/proot",
-        alpine = "https://dl-cdn.alpinelinux.org/alpine/v3.21/releases/aarch64/alpine-minirootfs-3.21.0-aarch64.tar.gz"
-    ),
-    "armeabi-v7a" to AbiUrls(
-        talloc = "https://raw.githubusercontent.com/Xed-Editor/Karbon-PackagesX/main/arm/libtalloc.so.2",
-        proot = "https://raw.githubusercontent.com/Xed-Editor/Karbon-PackagesX/main/arm/proot",
-        alpine = "https://dl-cdn.alpinelinux.org/alpine/v3.21/releases/armhf/alpine-minirootfs-3.21.0-armhf.tar.gz"
+        ubuntu = "https://cdimage.ubuntu.com/ubuntu-base/releases/noble/release/ubuntu-base-24.04.4-base-arm64.tar.gz"
     )
 )
 
-private data class AbiUrls(val talloc: String, val proot: String, val alpine: String)
+private data class AbiUrls(val ubuntu: String)

@@ -1,74 +1,60 @@
-ALPINE_DIR=$PREFIX/local/alpine
+UBUNTU_DIR=$PREFIX/local/ubuntu
+PROOT_BIN=$PREFIX/local/bin/proot
 
-mkdir -p $ALPINE_DIR
+mkdir -p $UBUNTU_DIR
 
-if [ -z "$(ls -A "$ALPINE_DIR" | grep -vE '^(root|tmp)$')" ]; then
-    tar -xf "$PREFIX/files/alpine.tar.gz" -C "$ALPINE_DIR"
+[ ! -e "$PROOT_BIN" ] && cp "$PREFIX/files/proot" "$PROOT_BIN"
+chmod +x "$PROOT_BIN"
+
+if [ -z "$(ls -A "$UBUNTU_DIR" | grep -vE '^(root|tmp)$')" ]; then
+    if [ -f "$PREFIX/files/custom-rootfs.tar.gz" ]; then
+        echo "[*] Extracting custom rootfs..."
+        tar -xf "$PREFIX/files/custom-rootfs.tar.gz" -C "$UBUNTU_DIR" 2>/dev/null || true
+    elif [ -f "$PREFIX/files/ubuntu.tar.gz" ]; then
+        echo "[*] Extracting Ubuntu rootfs..."
+        tar -xf "$PREFIX/files/ubuntu.tar.gz" -C "$UBUNTU_DIR" 2>/dev/null || true
+    fi
 fi
-
-[ ! -e "$PREFIX/local/bin/proot" ] && cp "$PREFIX/files/proot" "$PREFIX/local/bin"
-
-for sofile in "$PREFIX/files/"*.so.2; do
-    dest="$PREFIX/local/lib/$(basename "$sofile")"
-    [ ! -e "$dest" ] && cp "$sofile" "$dest"
-done
-
 
 ARGS="--kill-on-exit"
 ARGS="$ARGS -w /"
 
-for system_mnt in /apex /odm /product /system /system_ext /vendor \
- /linkerconfig/ld.config.txt \
- /linkerconfig/com.android.art/ld.config.txt \
- /plat_property_contexts /property_contexts; do
-
- if [ -e "$system_mnt" ]; then
-  system_mnt=$(realpath "$system_mnt")
-  ARGS="$ARGS -b ${system_mnt}"
- fi
+for system_mnt in /apex /odm /product /system /system_ext /vendor; do
+    if [ -e "$system_mnt" ]; then
+        system_mnt=$(realpath "$system_mnt" 2>/dev/null || echo "$system_mnt")
+        ARGS="$ARGS -b ${system_mnt}"
+    fi
 done
-unset system_mnt
 
 ARGS="$ARGS -b /sdcard"
 ARGS="$ARGS -b /storage"
 ARGS="$ARGS -b /dev"
 ARGS="$ARGS -b /data"
-ARGS="$ARGS -b /dev/urandom:/dev/random"
 ARGS="$ARGS -b /proc"
-ARGS="$ARGS -b $PREFIX"
-ARGS="$ARGS -b $PREFIX/local/stat:/proc/stat"
-ARGS="$ARGS -b $PREFIX/local/vmstat:/proc/vmstat"
-
-if [ -e "/proc/self/fd" ]; then
-  ARGS="$ARGS -b /proc/self/fd:/dev/fd"
-fi
-
-if [ -e "/proc/self/fd/0" ]; then
-  ARGS="$ARGS -b /proc/self/fd/0:/dev/stdin"
-fi
-
-if [ -e "/proc/self/fd/1" ]; then
-  ARGS="$ARGS -b /proc/self/fd/1:/dev/stdout"
-fi
-
-if [ -e "/proc/self/fd/2" ]; then
-  ARGS="$ARGS -b /proc/self/fd/2:/dev/stderr"
-fi
-
-
-ARGS="$ARGS -b $PREFIX"
 ARGS="$ARGS -b /sys"
+ARGS="$ARGS -b $PREFIX"
+ARGS="$ARGS -b /dev/urandom:/dev/random"
 
-if [ ! -d "$PREFIX/local/alpine/tmp" ]; then
- mkdir -p "$PREFIX/local/alpine/tmp"
- chmod 1777 "$PREFIX/local/alpine/tmp"
+if [ -e "/proc/self/fd" ]; then ARGS="$ARGS -b /proc/self/fd:/dev/fd"; fi
+if [ -e "/proc/self/fd/0" ]; then ARGS="$ARGS -b /proc/self/fd/0:/dev/stdin"; fi
+if [ -e "/proc/self/fd/1" ]; then ARGS="$ARGS -b /proc/self/fd/1:/dev/stdout"; fi
+if [ -e "/proc/self/fd/2" ]; then ARGS="$ARGS -b /proc/self/fd/2:/dev/stderr"; fi
+
+if [ -e "$PREFIX/local/stat" ]; then ARGS="$ARGS -b $PREFIX/local/stat:/proc/stat"; fi
+if [ -e "$PREFIX/local/vmstat" ]; then ARGS="$ARGS -b $PREFIX/local/vmstat:/proc/vmstat"; fi
+
+if [ ! -d "$UBUNTU_DIR/tmp" ]; then
+    mkdir -p "$UBUNTU_DIR/tmp"
+    chmod 1777 "$UBUNTU_DIR/tmp"
 fi
-ARGS="$ARGS -b $PREFIX/local/alpine/tmp:/dev/shm"
+ARGS="$ARGS -b $UBUNTU_DIR/tmp:/dev/shm"
 
-ARGS="$ARGS -r $PREFIX/local/alpine"
+ARGS="$ARGS -r $UBUNTU_DIR"
 ARGS="$ARGS -0"
 ARGS="$ARGS --link2symlink"
 ARGS="$ARGS --sysvipc"
 ARGS="$ARGS -L"
 
-$LINKER $PREFIX/local/bin/proot $ARGS sh $PREFIX/local/bin/init "$@"
+export PROOT_TMP_DIR=${PROOT_TMP_DIR:-$UBUNTU_DIR/tmp}
+
+$LINKER $PROOT_BIN $ARGS /bin/sh $PREFIX/local/bin/init "$@"

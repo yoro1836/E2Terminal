@@ -84,7 +84,8 @@ public final class TerminalView extends View {
     float mScrollRemainder;
 
     /** If non-zero, this is the last unicode code point received if that was a combining character. */
-    int mCombiningAccent;
+    /** Tracks current IME composing text for CJK inline composition support. */
+    private CharSequence mComposingText = "";
 
     /**
      * The current AutoFill type returned for {@link View#getAutofillType()} by {@link #getAutofillType()}.
@@ -345,12 +346,28 @@ public final class TerminalView extends View {
         return new BaseInputConnection(this, true) {
 
             @Override
+            public boolean setComposingText(CharSequence text, int newCursorPosition) {
+                if (TERMINAL_VIEW_KEY_LOGGING_ENABLED) {
+                    mClient.logInfo(LOG_TAG, "IME: setComposingText(\"" + text + "\", " + newCursorPosition + ")");
+                }
+                int deleteCount = mComposingText.length();
+                for (int i = 0; i < deleteCount; i++) {
+                    inputCodePoint(KEY_EVENT_SOURCE_SOFT_KEYBOARD, '\b', false, false);
+                }
+                sendTextToTerminal(text);
+                mComposingText = text;
+                return true;
+            }
+
+            @Override
             public boolean finishComposingText() {
                 if (TERMINAL_VIEW_KEY_LOGGING_ENABLED) mClient.logInfo(LOG_TAG, "IME: finishComposingText()");
                 super.finishComposingText();
-
-                sendTextToTerminal(getEditable());
-                getEditable().clear();
+                mComposingText = "";
+                if (getEditable().length() > 0) {
+                    sendTextToTerminal(getEditable());
+                    getEditable().clear();
+                }
                 return true;
             }
 
@@ -360,8 +377,19 @@ public final class TerminalView extends View {
                     mClient.logInfo(LOG_TAG, "IME: commitText(\"" + text + "\", " + newCursorPosition + ")");
                 }
                 super.commitText(text, newCursorPosition);
-
                 if (mEmulator == null) return true;
+
+                if (text != null && text.toString().equals(mComposingText.toString())) {
+                    mComposingText = "";
+                    getEditable().clear();
+                    return true;
+                }
+
+                int deleteCount = mComposingText.length();
+                for (int i = 0; i < deleteCount; i++) {
+                    inputCodePoint(KEY_EVENT_SOURCE_SOFT_KEYBOARD, '\b', false, false);
+                }
+                mComposingText = "";
 
                 Editable content = getEditable();
                 sendTextToTerminal(content);
