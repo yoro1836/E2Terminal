@@ -268,7 +268,7 @@ fun TerminalScreen(
                     SettingsCard(
                         title = { Text("Ubuntu") },
                         description = {Text(stringResource(strings.ubuntu_desc))},
-                        iconClick = {
+                        onClick = {
                            createSession(workingMode = WorkingMode.UBUNTU)
                             showAddDialog = false
                         })
