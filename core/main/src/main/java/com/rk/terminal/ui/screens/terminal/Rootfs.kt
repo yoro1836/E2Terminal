@@ -18,6 +18,9 @@ object Rootfs {
 
     var isDownloaded = mutableStateOf(isFilesDownloaded())
     fun isFilesDownloaded(): Boolean{
-        return reTerminal.exists() && reTerminal.child("ubuntu.tar.gz").exists()
+        return reTerminal.exists() && (
+            reTerminal.child("ubuntu.tar.gz").exists() ||
+            reTerminal.child("custom-rootfs.tar.gz").exists()
+        )
     }
 }

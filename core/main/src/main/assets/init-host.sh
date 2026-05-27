@@ -10,10 +10,10 @@ mkdir -p $UBUNTU_DIR
 if [ -z "$(ls -A "$UBUNTU_DIR" | grep -vE '^(root|tmp)$')" ]; then
     if [ -f "$PREFIX/files/custom-rootfs.tar.gz" ]; then
         echo "[*] Extracting custom rootfs..."
-        tar -xf "$PREFIX/files/custom-rootfs.tar.gz" -C "$UBUNTU_DIR" 2>/dev/null || true
+        tar -xpf "$PREFIX/files/custom-rootfs.tar.gz" -C "$UBUNTU_DIR"
     elif [ -f "$PREFIX/files/ubuntu.tar.gz" ]; then
         echo "[*] Extracting Ubuntu rootfs..."
-        tar -xf "$PREFIX/files/ubuntu.tar.gz" -C "$UBUNTU_DIR" 2>/dev/null || true
+        tar -xpf "$PREFIX/files/ubuntu.tar.gz" -C "$UBUNTU_DIR"
     fi
 fi
 

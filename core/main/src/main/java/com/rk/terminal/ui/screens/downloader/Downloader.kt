@@ -48,6 +48,11 @@ fun Downloader(
     var needsDownload by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
+        // If custom rootfs already exists, skip ubuntu download
+        if (Rootfs.reTerminal.child("custom-rootfs.tar.gz").exists()) {
+            isSetupComplete = true
+            return@LaunchedEffect
+        }
 
         try {
             val abi = Build.SUPPORTED_ABIS.firstOrNull {
