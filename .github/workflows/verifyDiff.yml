@@ -2,12 +2,19 @@ name: VerifyDiff
 
 on:
   workflow_dispatch:
-    
+
 
 jobs:
   verifyDiff:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+    - name: Build APK
+      run: ./gradlew assembleRelease
     - name: Verify Release apkDiff
-      run: bash .github/workflows/verifyDiff.sh
+      run: bash .github/workflows/verifyDiff.sh app/build/outputs/apk/release/app-release-unsigned.apk
