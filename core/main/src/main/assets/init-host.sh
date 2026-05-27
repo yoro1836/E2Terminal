@@ -3,17 +3,17 @@ PROOT_BIN=$PREFIX/local/bin/proot
 
 mkdir -p $UBUNTU_DIR
 
-# Copy proot binary from native lib dir if not already present
-[ ! -e "$PREFIX/files/proot" ] && [ -f "$NATIVE_LIB_DIR/libproot-loader.so" ] && cp "$NATIVE_LIB_DIR/libproot-loader.so" "$PREFIX/files/proot" && chmod +x "$PREFIX/files/proot"
-[ ! -e "$PROOT_BIN" ] && [ -f "$PREFIX/files/proot" ] && cp "$PREFIX/files/proot" "$PROOT_BIN" && chmod +x "$PROOT_BIN"
+# Copy proot binary from native lib dir
+[ -f "$NATIVE_LIB_DIR/libproot-loader.so" ] && cp "$NATIVE_LIB_DIR/libproot-loader.so" "$PREFIX/files/proot" && chmod +x "$PREFIX/files/proot"
+[ -f "$PREFIX/files/proot" ] && cp "$PREFIX/files/proot" "$PROOT_BIN" && chmod +x "$PROOT_BIN"
 
 if [ -z "$(ls -A "$UBUNTU_DIR" | grep -vE '^(root|tmp)$')" ]; then
     if [ -f "$PREFIX/files/custom-rootfs.tar.gz" ]; then
         echo "[*] Extracting custom rootfs..."
-        tar -xpf "$PREFIX/files/custom-rootfs.tar.gz" -C "$UBUNTU_DIR"
+        tar -xf "$PREFIX/files/custom-rootfs.tar.gz" -C "$UBUNTU_DIR" || true
     elif [ -f "$PREFIX/files/ubuntu.tar.gz" ]; then
         echo "[*] Extracting Ubuntu rootfs..."
-        tar -xpf "$PREFIX/files/ubuntu.tar.gz" -C "$UBUNTU_DIR"
+        tar -xf "$PREFIX/files/ubuntu.tar.gz" -C "$UBUNTU_DIR" || true
     fi
 fi
 

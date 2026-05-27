@@ -56,11 +56,11 @@ object MkSession {
             }
 
 
-            // Copy proot-loader as executable binary to filesDir
+            // Copy proot-loader as executable binary to filesDir (always overwrite for updates)
             val prootSrc = File(applicationInfo.nativeLibraryDir, "libproot-loader.so")
             val prootDst = File(filesDir, "proot")
-            if (prootSrc.exists() && !prootDst.exists()) {
-                prootSrc.copyTo(prootDst)
+            if (prootSrc.exists()) {
+                prootSrc.copyTo(prootDst, overwrite = true)
                 prootDst.setExecutable(true)
             }
 
